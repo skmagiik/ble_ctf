@@ -25,6 +25,7 @@
 #include "esp_gap_ble_api.h"
 #include "esp_gatts_api.h"
 #include "esp_bt_main.h"
+#include "esp_mac.h"
 #include "gatts_table_creat_demo.h"
 #include "esp_gatt_common_api.h"
 
@@ -65,7 +66,7 @@ static uint8_t raw_adv_data[] = {
         /* service uuid */
         0x03, 0x03, 0xFF, 0x00,
         /* device name (first number is the length) */
-        0x07, 0x09, 'B', 'L', 'E', 'C', 'T', 'F'
+        0x14, 0x09, 'B', 'L', 'E', 'C', 'T', 'F', '_', 'A', 'B', 'C', 'D', 'E', 'F', '1', '2', '3', '4', '5', '6'
 
 };
 static uint8_t raw_scan_rsp_data[] = {
@@ -178,7 +179,6 @@ static const uint16_t GATTS_CHAR_UUID_FLAG_MTU                  = 0xFF13;
 static const uint16_t GATTS_CHAR_UUID_FLAG_WRITE_RESPONSE       = 0xFF14;
 static const uint16_t GATTS_CHAR_UUID_FLAG_HIDDEN_NOTIFY        = 0xFF15;
 static const uint16_t GATTS_CHAR_UUID_FLAG_CRAZY                = 0xFF16;
-static const uint16_t GATTS_CHAR_UUID_FLAG_TWITTER              = 0xFF17;
 
 static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
@@ -194,7 +194,7 @@ static const uint8_t char_prop_crazy   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT
 
 // start ctf data vars
 static char writeData[100];
-static char flag_state[20] = {'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F'};
+static char flag_state[19] = {'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F'};
 static uint8_t score_read_value[11] = {'S', 'c', 'o', 'r', 'e', ':', ' ', '0','/','2','0'};
 static const char write_any_flag[] = "Write anything here";
 static const char write_ascii_flag[] = "Write the ascii value \"yo\" here";
@@ -239,7 +239,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 
     /* SCORE Characteristic Value */
     [IDX_CHAR_VAL_SCORE]  =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_SCORE, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_SCORE, ESP_GATT_PERM_READ,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(score_read_value), (uint8_t *)score_read_value}},
     
     /* FLAG Characteristic Declaration */
@@ -475,16 +475,6 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_FLAG_CRAZY, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(crazy_value)-1, (uint8_t *)crazy_value}},
 
-    /* FLAG twitter Characteristic Declaration */
-    [IDX_CHAR_FLAG_TWITTER]      =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
-      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read}},
-
-    /* FLAG twitter Characteristic Value */
-    [IDX_CHAR_VAL_FLAG_TWITTER]  =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_FLAG_TWITTER, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(twitter_value)-1, (uint8_t *)twitter_value}},
-
 };
 
 static void set_score()
@@ -637,6 +627,19 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 ESP_LOGE(GATTS_TABLE_TAG, "set device name failed, error code = %x", set_dev_name_ret);
             }
     #ifdef CONFIG_SET_RAW_ADV_DATA
+            // Update the name of the BLE device based on the mac address
+            uint8_t bt_mac[6];
+            esp_err_t read_mac = esp_read_mac(bt_mac, ESP_MAC_BT);
+            if (read_mac){
+              ESP_LOGE(GATTS_TABLE_TAG, "read bt mac failed, error code = %x", read_mac);
+            }
+
+            // Convert to ascii string and insert into raw_adv_data + 19 (location of the ABCDEF123456 text
+            for (size_t i = 0; i < 6; ++i) {
+                sprintf((char*)raw_adv_data + 19 + 2 * i, "%02X", bt_mac[i]);
+            }
+
+
             esp_err_t raw_adv_ret = esp_ble_gap_config_adv_data_raw(raw_adv_data, sizeof(raw_adv_data));
             if (raw_adv_ret){
                 ESP_LOGE(GATTS_TABLE_TAG, "config raw adv data failed, error code = %x ", raw_adv_ret);
@@ -906,10 +909,6 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                     if (strcmp(writeData,"fbb966958f07e4a0cc48") == 0){
                         //hidden notify
                         flag_state[18] = 'T';
-                    }
-                    if (strcmp(writeData,"d953bfb9846acc2e15ee") == 0){
-                        //final flag
-                        flag_state[19] = 'T';
                     }
 
                     ESP_LOGI(GATTS_TABLE_TAG, "FLAG STATE = %s", flag_state);
