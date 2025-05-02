@@ -1,3 +1,3 @@
 ## Flag 12 Hint
 
-Check out handle 0x0042 and google search gatt indicate.  For single response indicate messages, like this challenge, tools such as gatttool will work just fine.   
+Check out handle 0x0046 and do what it says. Keep in mind that this notification clallange requires you to recieve multiple responses in order to complete. 

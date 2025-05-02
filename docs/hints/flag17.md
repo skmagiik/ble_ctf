@@ -1,3 +1,3 @@
 ## Flag 17 Hint
 
-Check out handle 0x0050 and do what it says.  This challenge differs from other write challenges as your tool that does the write needs to have write response ack messages implemented correctly.  This flag is also tricky as the flag will come back as notification response data even though there is no "NOTIFY" property.
+Check out all of the handle properties on 0x0054!  Poke around with all of them and find pieces to your flag.
