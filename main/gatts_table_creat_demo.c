@@ -1,6 +1,5 @@
 /*
    This example code is in the Public Domain (or CC0 licensed, at your option.)
-
    Unless required by applicable law or agreed to in writing, this
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
@@ -34,7 +33,7 @@
 #define PROFILE_NUM                 1
 #define PROFILE_APP_IDX             0
 #define ESP_APP_ID                  0x55
-#define SAMPLE_DEVICE_NAME          "2b00042f7481c7b056c4b410d28f33cf"
+#define SAMPLE_DEVICE_NAME          "BLE{NOTASADVERTISED}"
 #define SVC_INST_ID                 0
 
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX 100
@@ -160,7 +159,7 @@ static const uint16_t GATTS_SERVICE_UUID_TEST                   = 0x00FF;
 static const uint16_t GATTS_CHAR_UUID_SCORE                     = 0xFF01;
 static const uint16_t GATTS_CHAR_UUID_FLAG                      = 0xFF02;
 static const uint16_t GATTS_CHAR_UUID_FLAG_SIMPLE_READ          = 0xFF03;
-static const uint16_t GATTS_CHAR_UUID_FLAG_MD5                  = 0xFF04;
+// 0xFF04 UNUSED <- Removed challenge
 static const uint16_t GATTS_CHAR_UUID_FLAG_WRITE_ANYTHING       = 0xFF05;
 static const uint16_t GATTS_CHAR_UUID_FLAG_WRITE_ASCII          = 0xFF06;
 static const uint16_t GATTS_CHAR_UUID_FLAG_WRITE_HEX            = 0xFF07;
@@ -176,7 +175,7 @@ static const uint16_t GATTS_CHAR_UUID_FLAG_INDICATE_MULTI_READ  = 0xFF10;
 static const uint16_t GATTS_CHAR_UUID_FLAG_INDICATE_MULTI       = 0xFF11;
 static const uint16_t GATTS_CHAR_UUID_FLAG_MAC                  = 0xFF12;
 static const uint16_t GATTS_CHAR_UUID_FLAG_MTU                  = 0xFF13;
-static const uint16_t GATTS_CHAR_UUID_FLAG_WRITE_RESPONSE       = 0xFF14;
+// 0xFF14 UNUSED <- Removed challenge
 static const uint16_t GATTS_CHAR_UUID_FLAG_HIDDEN_NOTIFY        = 0xFF15;
 static const uint16_t GATTS_CHAR_UUID_FLAG_CRAZY                = 0xFF16;
 
@@ -194,10 +193,10 @@ static const uint8_t char_prop_crazy   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT
 
 // start ctf data vars
 static char writeData[100];
-static char flag_state[19] = {'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F'};
-static uint8_t score_read_value[11] = {'S', 'c', 'o', 'r', 'e', ':', ' ', '0','/','2','0'};
+static char flag_state[17] = {'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F'};
+static uint8_t score_read_value[31] = "Score: 0/17 [FFFFFFFFFFFFFFFFF]";
 static const char write_any_flag[] = "Write anything here";
-static const char write_ascii_flag[] = "Write the ascii value \"yo\" here";
+static const char write_ascii_flag[] = "Write the ascii value \"GLaDOS\" here";
 static const char write_hex_flag[] = "Write the hex value 0x07 here";
 static const char read_alot_value[] = "Read me 1000 times";
 static const char read_mac_value[] = "Connect with BT MAC address 11:22:33:44:55:66";
@@ -209,8 +208,6 @@ static const char indicate_multi_read_value[] = "Listen to handle 0x004a for mul
 static const char brute_write_flag[] = "Brute force my value 00 to ff";
 static const char hidden_notify_value[] = "No notifications here! really?";
 static const char crazy_value[] = "So many properties!";
-static const char twitter_value[] = "md5 of author's twitter handle";
-static const char write_response_data[20] = "Write+resp 'hello'  ";
 static const uint8_t read_write2_value[23] = {'W','r','i','t','e',' ','0','x','C','9',' ','t','o',' ','h','a','n','d','l','e',' ','5','8'};
 
 //static const uint8_t brute_write_flag[33] = {'B','r','u','t','e',' ','f','o','r','c','e',' ','m','y',' ','v','a','l','u','e', ' ', '0','x','0','0',' ','t','o',' ','0','x','f','f'};
@@ -218,7 +215,6 @@ static const uint8_t flag_read_value[16] = {'W','r','i','t','e', ' ', 'F', 'l','
 int read_alot_counter = 0;
 int read_counter = 0;
 int score = 0;
-static char string_score[10] = "0";
 int BLINK_GPIO=2;
 int indicate_handle_state = 0;
 int send_response=0;
@@ -252,7 +248,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_FLAG, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(flag_read_value), (uint8_t *)flag_read_value}},
 
-    /* FLAG MD5 Characteristic Declaration */
+    /* FLAG Simple Read Characteristic Declaration */
     [IDX_CHAR_FLAG_SIMPLE_READ]      =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read}},
@@ -260,17 +256,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     /* Characteristic Value */
     [IDX_CHAR_VAL_FLAG_SIMPLE_READ]  =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_FLAG_SIMPLE_READ, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof("d205303e099ceff44835")-1, (uint8_t *)"d205303e099ceff44835"}},
-
-    /* FLAG MD5 Characteristic Declaration */
-    [IDX_CHAR_FLAG_MD5]      =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
-      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read}},
-
-    /* Characteristic Value */
-    [IDX_CHAR_VAL_FLAG_MD5]  =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_FLAG_MD5, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof("MD5 of Device Name")-1, (uint8_t *)"MD5 of Device Name"}},
+      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof("BLE{B00K_W0RM}")-1, (uint8_t *)"BLE{B00K_W0RM}"}},
 
     /* FLAG WRITE ANYTHING Characteristic Declaration */
     [IDX_CHAR_FLAG_WRITE_ANYTHING]      =
@@ -443,18 +429,6 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_FLAG_MTU, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(read_mtu_value)-1, (uint8_t *)read_mtu_value}},
 
-    /* FLAG write response Characteristic Declaration */
-    [IDX_CHAR_FLAG_WRITE_RESPONSE]      =
-    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
-    //{{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
-      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
-
-    /* Characteristic Value */
-    [IDX_CHAR_VAL_FLAG_WRITE_RESPONSE]  =
-    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_FLAG_WRITE_RESPONSE, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-    //{{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_FLAG_WRITE_RESPONSE, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(write_response_data)-1, (uint8_t *)write_response_data}},
-
     /* FLAG hidden notify Characteristic Declaration */
     [IDX_CHAR_FLAG_HIDDEN_NOTIFY]      =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
@@ -487,14 +461,10 @@ static void set_score()
             score += 1;
         }
     }
-    
-    itoa(score, string_score, 10);
-    for (int i = 0 ; i < strlen(string_score) ; ++i)
-    {
-        if (strlen(string_score) == 1){
-            score_read_value[7] = ' ';}
-        score_read_value[6+i] = string_score[i];
-    }
+
+    snprintf((char * restrict)&score_read_value[6], 3, "%2d", score);
+    score_read_value[8] = '/'; //overwrite the null terminator from the snprintf
+    strncpy((char * restrict)&score_read_value[13], flag_state, 17);
     esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_SCORE]+1, sizeof score_read_value, score_read_value);
 }
 
@@ -679,24 +649,9 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
             gpio_set_level(BLINK_GPIO, 1);
             if (read_counter > 1000){
-                esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_READ_ALOT]+1, 20, (uint8_t *)"6ffcd214ffebdc0d069e");
+                esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_READ_ALOT]+1, 16, (uint8_t *)"BLE{P3RS1ST3NC3}");
             }
-            if (param->read.handle == blectf_handle_table[IDX_CHAR_FLAG_WRITE_RESPONSE]+1){
-                // add an ascii value write check to this one
-                esp_gatt_rsp_t *rsp = (esp_gatt_rsp_t *)malloc(sizeof(esp_gatt_rsp_t));
-                if (flag_state[16] == 'T' || flag_state[16] == 'H'){
-                    char write_response_flag[] = "d41d8cd98f00b204e980";
-                    rsp->attr_value.len = sizeof(write_response_flag);
-                    rsp->attr_value.auth_req = ESP_GATT_AUTH_REQ_NONE;
-                    memcpy(rsp->attr_value.value, (uint8_t *)write_response_flag, sizeof(write_response_flag));
-                }else{
-                    rsp->attr_value.len = sizeof(write_response_data);
-                    rsp->attr_value.auth_req = ESP_GATT_AUTH_REQ_NONE;
-                    memcpy(rsp->attr_value.value, (uint8_t *)write_response_data, sizeof(write_response_data));
-                }
-
-                esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id, ESP_GATT_OK, rsp);
-            }
+            
 
        	    break;
         case ESP_GATTS_WRITE_EVT:
@@ -713,14 +668,14 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 // any write
                 if (blectf_handle_table[IDX_CHAR_FLAG_WRITE_ANYTHING]+1 == param->write.handle)
                 {
-                    esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_WRITE_ANYTHING]+1, 20, (uint8_t *)"3873c0270763568cf7aa");
+                    esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_WRITE_ANYTHING]+1, 14, (uint8_t *)"BLE{GL4D14T0R}");
                 }
 
                 // hex ascii
                 if (blectf_handle_table[IDX_CHAR_FLAG_WRITE_ASCII]+1 == param->write.handle)
                 {
-                    if (strcmp(writeData,"yo") == 0){
-                        esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_WRITE_ASCII]+1, 20, (uint8_t *)"c55c6314b3db0a6128af");
+                    if (strcmp(writeData,"GLaDOS") == 0){
+                        esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_WRITE_ASCII]+1, 16, (uint8_t *)"BLE{ST1LL_4L1V3}");
                     }
                     else
                     {
@@ -733,7 +688,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 {
                     uint16_t descr_value = param->write.value[1]<<8 |param->write.value[0];
                     if (descr_value == 0x0007){
-                        esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_WRITE_HEX]+1, 20, (uint8_t *)"1179080b29f8da16ad66");
+                        esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_WRITE_HEX]+1, 15, (uint8_t *)"BLE{J4M35_B0ND}");
                     }
                     else
                     {
@@ -744,10 +699,10 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 if (blectf_handle_table[IDX_CHAR_FLAG_BRUTE_WRITE]+1 == param->write.handle)
                 {
                     uint16_t descr_value = param->write.value[1]<<8 |param->write.value[0];
-                    if (descr_value == 0x00D1 || flag_state[8] == 'T' || flag_state[8] == 'H'){
-                        esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_BRUTE_WRITE]+1, 20, (uint8_t *)"933c1fcfa8ed52d2ec05");
-                        if (flag_state[8] != 'T'){
-                            flag_state[8] = 'H';
+                    if (descr_value == 0x00D1 || flag_state[7] == 'T' || flag_state[7] == 'H'){
+                        esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_BRUTE_WRITE]+1, 16, (uint8_t *)"BLE{3T_TU_BRUT3}");
+                        if (flag_state[7] != 'T'){
+                            flag_state[7] = 'H';
                         }
                     }
                     else
@@ -759,10 +714,10 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 if (blectf_handle_table[IDX_CHAR_FLAG_SIMPLE_WRITE2]+1 == param->write.handle)
                 {
                     uint16_t descr_value = param->write.value[1]<<8 |param->write.value[0];
-                    if (descr_value == 0x00C9 || flag_state[7] == 'T' || flag_state[7] == 'H'){
-                        esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_SIMPLE_WRITE2_READ]+1, 20, (uint8_t *)"f8b136d937fad6a2be9f");
-                        if (flag_state[7] != 'T'){
-                            flag_state[7] = 'H';
+                    if (descr_value == 0x00C9 || flag_state[6] == 'T' || flag_state[6] == 'H'){
+                        esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_SIMPLE_WRITE2_READ]+1, 19, (uint8_t *)"BLE{CH41N-R34CT10N}");
+                        if (flag_state[6] != 'T'){
+                            flag_state[6] = 'H';
                         }
                     }
                     else
@@ -773,7 +728,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 // notify single response flag
                 if (blectf_handle_table[IDX_CHAR_FLAG_NOTIFICATION]+1 == param->write.handle)
                 {
-                    char notify_data[20] = "5ec3772bcd00cf06d8eb";
+                    char notify_data[14] = "BLE{N0T1FY_M3}";
                     esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_NOTIFICATION]+1, sizeof(notification_read_value)-1, (uint8_t *)notification_read_value);
                     esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, blectf_handle_table[IDX_CHAR_VAL_FLAG_NOTIFICATION], sizeof(notify_data), (uint8_t *)notify_data, false);
                 }
@@ -781,7 +736,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 // indicate single response flag flag
                 if (blectf_handle_table[IDX_CHAR_FLAG_INDICATE]+1 == param->write.handle)
                 {
-                    char indicate_data[20] = "c7b86dd121848c77c113";
+                    char indicate_data[14] = "BLE{1ND1C4T0R}";
                     esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, blectf_handle_table[IDX_CHAR_VAL_FLAG_INDICATE], sizeof(indicate_data), (uint8_t *)indicate_data, true);
                 }
 
@@ -801,20 +756,12 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                     char indicate_data[20] = "U no want this msg";
                     esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, blectf_handle_table[IDX_CHAR_VAL_FLAG_INDICATE_MULTI], sizeof(indicate_data), (uint8_t *)indicate_data, true);
                 }
-                // write response
-                //"d41d8cd98f00b204e980"
-                if (blectf_handle_table[IDX_CHAR_FLAG_WRITE_RESPONSE]+1 == param->write.handle)
-                {
-                    if (strcmp(writeData,"hello") == 0){
-                        check_send_response=1;
-                        // we dont have to do send_response here it will hit the catchall
-                    }
-                }
+
                 // notify hidden notify flag
                 if (blectf_handle_table[IDX_CHAR_FLAG_HIDDEN_NOTIFY]+1 == param->write.handle)
                 {
                     indicate_handle_state = blectf_handle_table[IDX_CHAR_FLAG_HIDDEN_NOTIFY]; 
-                    char notify_data[20] = "fc920c68b6006169477b";
+                    char notify_data[19] = "BLE{GH0ST_1N_SH3LL}";
                     esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_HIDDEN_NOTIFY]+1, sizeof(hidden_notify_value)-1, (uint8_t *)hidden_notify_value);
                     esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, blectf_handle_table[IDX_CHAR_VAL_FLAG_HIDDEN_NOTIFY], sizeof(notify_data), (uint8_t *)notify_data, false);
                 }
@@ -822,8 +769,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 // so many properties
                 if (blectf_handle_table[IDX_CHAR_FLAG_CRAZY]+1 == param->write.handle)
                 {
-                    esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_CRAZY]+1, 10, (uint8_t *)"fbb966958f");
-                    char notify_data[10] = "07e4a0cc48";
+                    esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_CRAZY]+1, 10, (uint8_t *)"BLE{BR1DG3_");
+                    char notify_data[8] = "TH3_G4P}";
                     esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, blectf_handle_table[IDX_CHAR_VAL_FLAG_CRAZY], sizeof(notify_data), (uint8_t *)notify_data, false);
                 }
 
@@ -834,81 +781,73 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                     esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG]+1, sizeof flag_read_value, flag_read_value);
 
                     //TODO: break this out into a function
-                    if (strcmp(writeData,"12345678901234567890") == 0){
+                    if (strcmp(writeData,"BLE{G3TT1NG_ST4RT3D}") == 0){
                         //gimmi from the hints docs or this source
                         flag_state[0] = 'T';
                     }
-                    if (strcmp(writeData,"2b00042f7481c7b056c4") == 0){
+                    if (strcmp(writeData,"BLE{NOTASADVERTISED}") == 0){
                         //attributes device name
                         flag_state[1] = 'T';
                     }
-                    if (strcmp(writeData,"d205303e099ceff44835") == 0){
+                    if (strcmp(writeData,"BLE{B00K_W0RM}") == 0){
                         //simple read
                         flag_state[2] = 'T';
                     }
-                    if (strcmp(writeData,"5cd56d74049ae40f442e") == 0){
-                        //md5 of device name
+                    if (strcmp(writeData,"BLE{GL4D14T0R}") == 0){
+                        //write any
                         flag_state[3] = 'T';
                     }
-                    if (strcmp(writeData,"3873c0270763568cf7aa") == 0){
-                        //write any
+                    if (strcmp(writeData,"BLE{ST1LL_4L1V3}") == 0){
+                        //write ascii
                         flag_state[4] = 'T';
                     }
-                    if (strcmp(writeData,"c55c6314b3db0a6128af") == 0){
-                        //write ascii
+                    if (strcmp(writeData,"BLE{J4M35_B0ND}") == 0){
+                        //write hex
                         flag_state[5] = 'T';
                     }
-                    if (strcmp(writeData,"1179080b29f8da16ad66") == 0){
-                        //write hex
+                    if (strcmp(writeData,"BLE{CH41N-R34CT10N}") == 0){
+                        //read & write
                         flag_state[6] = 'T';
                     }
-                    if (strcmp(writeData,"f8b136d937fad6a2be9f") == 0){
-                        //read & write
+                    if (strcmp(writeData,"BLE{3T_TU_BRUT3}") == 0){
+                        //brute write
                         flag_state[7] = 'T';
                     }
-                    if (strcmp(writeData,"933c1fcfa8ed52d2ec05") == 0){
-                        //brute write
+                    if (strcmp(writeData,"BLE{P3RS1ST3NC3}") == 0){
+                        //read a lot (1000x)
                         flag_state[8] = 'T';
                     }
-                    if (strcmp(writeData,"6ffcd214ffebdc0d069e") == 0){
-                        //brute write
+                    if (strcmp(writeData,"BLE{N0T1FY_M3}") == 0){
+                        //notify
                         flag_state[9] = 'T';
                     }
-                    if (strcmp(writeData,"5ec3772bcd00cf06d8eb") == 0){
-                        //notify
+                    if (strcmp(writeData,"BLE{1ND1C4T0R}") == 0){
+                        //indicate
                         flag_state[10] = 'T';
                     }
-                    if (strcmp(writeData,"c7b86dd121848c77c113") == 0){
-                        //indicate
+                    if (strcmp(writeData,"BLE{3CH0_3CH0}") == 0){
+                        //notify multi
                         flag_state[11] = 'T';
                     }
-                    if (strcmp(writeData,"c9457de5fd8cafe349fd") == 0){
-                        //notify multi
+                    if (strcmp(writeData,"BLE{1ND1C4T3_M0R3}") == 0){
+                        //indicate multi
                         flag_state[12] = 'T';
                     }
-                    if (strcmp(writeData,"b6f3a47f207d38e16ffa") == 0){
-                        //indicate multi
+                    if (strcmp(writeData,"BLE{SP00F_M4ST3R}") == 0){
+                        //mac
                         flag_state[13] = 'T';
                     }
-                    if (strcmp(writeData,"aca16920583e42bdcf5f") == 0){
-                        //mac
+                    if (strcmp(writeData,"BLE{P4CK3T_S1Z3R}") == 0){
+                        //mtu
                         flag_state[14] = 'T';
                     }
-                    if (strcmp(writeData,"b1e409e5a4eaf9fe5158") == 0){
-                        //mtu
+                    if (strcmp(writeData,"BLE{GH0ST_1N_SH3LL}") == 0){
+                        //hidden notify
                         flag_state[15] = 'T';
                     }
-                    if (strcmp(writeData,"d41d8cd98f00b204e980") == 0){
-                        //write response
+                    if (strcmp(writeData,"BLE{BR1DG3_TH3_G4P}") == 0){
+                        //hidden notify
                         flag_state[16] = 'T';
-                    }
-                    if (strcmp(writeData,"fc920c68b6006169477b") == 0){
-                        //hidden notify
-                        flag_state[17] = 'T';
-                    }
-                    if (strcmp(writeData,"fbb966958f07e4a0cc48") == 0){
-                        //hidden notify
-                        flag_state[18] = 'T';
                     }
 
                     ESP_LOGI(GATTS_TABLE_TAG, "FLAG STATE = %s", flag_state);
@@ -934,23 +873,22 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
         case ESP_GATTS_MTU_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
             if (param->mtu.mtu == 444) {
-                esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_MTU]+1, 20, (uint8_t *)"b1e409e5a4eaf9fe5158");
+                esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_MTU]+1, 17, (uint8_t *)"BLE{P4CK3T_S1Z3R}");
             }
             break;
         case ESP_GATTS_CONF_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_CONF_EVT, status = %d", param->conf.status);
             // notify multi
             if (indicate_handle_state == blectf_handle_table[IDX_CHAR_FLAG_NOTIFICATION_MULTI]){
-                char indicate_data[20] = "c9457de5fd8cafe349fd";
+                char indicate_data[14] = "BLE{3CH0_3CH0}";
                 // delay was added cause with none, this crashed the server
                 vTaskDelay(100);
                 esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, blectf_handle_table[IDX_CHAR_VAL_FLAG_NOTIFICATION_MULTI], sizeof(indicate_data), (uint8_t *)indicate_data, false);
             }
             // indicate multi
             if (indicate_handle_state == blectf_handle_table[IDX_CHAR_FLAG_INDICATE_MULTI]){
-                char indicate_data[20] = "b6f3a47f207d38e16ffa";
-                esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, blectf_handle_table[IDX_CHAR_VAL_FLAG_INDICATE_MULTI], sizeof(indicate_data), (uint8_t *)indicate_data, true);
-            }
+                char indicate_data[18] = "BLE{1ND1C4T3_M0R3}";
+                esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, blectf_handle_table[IDX_CHAR_VAL_FLAG_INDICATE_MULTI], sizeof(indicate_data), (uint8_t *)indicate_data, true); }
             break;
         case ESP_GATTS_START_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "SERVICE_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
@@ -966,7 +904,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 match_mac[4] == param->connect.remote_bda[4] &&
                 match_mac[5] == param->connect.remote_bda[5]){
                 ESP_LOGI(GATTS_TABLE_TAG, "THIS IS THE MAC YOU ARE LOOKING FOR");
-                esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_MAC]+1, 20, (uint8_t *)"aca16920583e42bdcf5f");
+                esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_FLAG_MAC]+1, 17, (uint8_t *)"BLE{SP00F_M4ST3R}");
             }
 
 
@@ -1023,8 +961,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             //TODO: change the following to set a read value instead of doing a notify
             if (check_send_response == 1){
                 check_send_response = 0;
-                if (flag_state[16] != 'T'){
-                    flag_state[16] = 'H';
+                if (flag_state[15] != 'T'){
+                    flag_state[15] = 'H';
                 }
             }
             

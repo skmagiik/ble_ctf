@@ -1,3 +1,3 @@
 ## Flag 3 Hint
 
-Check out the ascii value of handle 0x0030.  Do what it tells you and submit the flag you find to 0x002c.
+Bluetooth GATT services provide some extra device attributes.  Try finding the value of the Generic Access -> Device Name.

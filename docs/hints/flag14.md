@@ -1,3 +1,3 @@
 ## Flag 14 Hint
 
-Check out handle 0x0048 and google search gatt indicate.  Keep in mind that this challenge will require you to parse multiple indicate responses in order to complete the challenge.
+Check out handle 0x004c and do what it says.  Much like ethernet or wifi devices, you can also change your bluetooth devices mac address.

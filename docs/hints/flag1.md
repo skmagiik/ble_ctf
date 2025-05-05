@@ -6,7 +6,7 @@ First, check out your score:
 ```` gatttool -b de:ad:be:ef:be:f1 --char-read -a 0x002a|awk -F':' '{print $2}'|tr -d ' '|xxd -r -p;printf '\n' ````
 
 Next, lets sumbmit the following flag.
-```` gatttool -b de:ad:be:ef:be:f1 --char-write-req -a 0x002c -n $(echo -n "12345678901234567890"|xxd -ps) ````
+```` gatttool -b de:ad:be:ef:be:f1 --char-write-req -a 0x002c -n $(echo -n "BLE{G3TT1NG_ST4RT3D}"|xxd -ps) ````
 
 Finaly, check out your score again to see your flag got accepted:   
 ```` gatttool -b de:ad:be:ef:be:f1 --char-read -a 0x002a|awk -F':' '{print $2}'|tr -d ' '|xxd -r -p;printf '\n' ````

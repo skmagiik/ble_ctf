@@ -1,3 +1,3 @@
 ## Flag 11 Hint
 
-Check out handle 0x0040 and google search gatt notify.  Some tools like gatttool have the ability to subscribe to gatt notifications
+Check out handle 0x0042 and google search gatt indicate.  For single response indicate messages, like this challenge, tools such as gatttool will work just fine.   
