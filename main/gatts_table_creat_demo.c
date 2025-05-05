@@ -193,8 +193,8 @@ static const uint8_t char_prop_crazy   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT
 
 // start ctf data vars
 static char writeData[100];
-static char flag_state[19] = {'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F'};
-static uint8_t score_read_value[11] = {'S', 'c', 'o', 'r', 'e', ':', ' ', '0','/','1','7'};
+static char flag_state[17] = {'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F'};
+static uint8_t score_read_value[31] = "Score: 0/17 [FFFFFFFFFFFFFFFFF]";
 static const char write_any_flag[] = "Write anything here";
 static const char write_ascii_flag[] = "Write the ascii value \"GLaDOS\" here";
 static const char write_hex_flag[] = "Write the hex value 0x07 here";
@@ -215,7 +215,6 @@ static const uint8_t flag_read_value[16] = {'W','r','i','t','e', ' ', 'F', 'l','
 int read_alot_counter = 0;
 int read_counter = 0;
 int score = 0;
-static char string_score[10] = "0";
 int BLINK_GPIO=2;
 int indicate_handle_state = 0;
 int send_response=0;
@@ -462,14 +461,10 @@ static void set_score()
             score += 1;
         }
     }
-    
-    itoa(score, string_score, 10);
-    for (int i = 0 ; i < strlen(string_score) ; ++i)
-    {
-        if (strlen(string_score) == 1){
-            score_read_value[7] = ' ';}
-        score_read_value[6+i] = string_score[i];
-    }
+
+    snprintf((char * restrict)&score_read_value[6], 3, "%2d", score);
+    score_read_value[8] = '/'; //overwrite the null terminator from the snprintf
+    strncpy((char * restrict)&score_read_value[13], flag_state, 17);
     esp_ble_gatts_set_attr_value(blectf_handle_table[IDX_CHAR_SCORE]+1, sizeof score_read_value, score_read_value);
 }
 
