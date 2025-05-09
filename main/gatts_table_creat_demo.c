@@ -455,7 +455,7 @@ static void set_score()
 {
     //set scores
     score = 0;
-    for (int i = 0 ; i < 20 ; ++i)
+    for (int i = 0 ; i < 17 ; ++i)
     {
         if (flag_state[i] == 'T'){
             score += 1;
