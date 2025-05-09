@@ -202,13 +202,13 @@ static const char read_alot_value[] = "Read me 1000 times";
 static const char read_mac_value[] = "Connect with BT MAC address 11:22:33:44:55:66";
 static const char read_mtu_value[] = "Set your connection MTU to 444";
 static const char notification_read_value[] = "Listen to me for a single notification";
-static const char indicate_read_value[] = "Listen to handle 0x0044 for a single indication";
+static const char indicate_read_value[] = "Listen to handle 0x0042 for a single indication";
 static const char notification_multi_read_value[] = "Listen to me for multi notifications";
-static const char indicate_multi_read_value[] = "Listen to handle 0x004a for multi indications";
+static const char indicate_multi_read_value[] = "Listen to handle 0x0048 for multi indications";
 static const char brute_write_flag[] = "Brute force my value 00 to ff";
 static const char hidden_notify_value[] = "No notifications here! really?";
 static const char crazy_value[] = "So many properties!";
-static const uint8_t read_write2_value[23] = {'W','r','i','t','e',' ','0','x','C','9',' ','t','o',' ','h','a','n','d','l','e',' ','5','8'};
+static const uint8_t read_write2_value[23] = {'W','r','i','t','e',' ','0','x','C','9',' ','t','o',' ','h','a','n','d','l','e',' ','5','6'};
 
 //static const uint8_t brute_write_flag[33] = {'B','r','u','t','e',' ','f','o','r','c','e',' ','m','y',' ','v','a','l','u','e', ' ', '0','x','0','0',' ','t','o',' ','0','x','f','f'};
 static const uint8_t flag_read_value[16] = {'W','r','i','t','e', ' ', 'F', 'l','a','g','s', ' ', 'H','e','r', 'e'};
